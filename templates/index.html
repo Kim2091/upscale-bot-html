@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Image Upscaler</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <style>
+        .tab-button {
+            padding: 0.75rem 1.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #6b7280;
+            border-bottom: 2px solid transparent;
+            margin-right: 4px;
+            position: relative;
+            transition: all 0.2s;
+        }
+        
+        .tab-button:hover {
+            color: #374151;
+        }
+        
+        .tab-button::after {
+            content: '';
+            position: absolute;
+            right: -2px;
+            top: 25%;
+            height: 50%;
+            width: 1px;
+            background-color: #e5e7eb;
+        }
+        
+        .tab-button:last-child::after {
+            display: none;
+        }
+        
+        .tab-button.active {
+            color: #2563eb;
+            border-bottom-color: #2563eb;
+        }
+        
+        .tab-content {
+            padding-top: 1.5rem;
+        }
+
+        .tabs-container {
+            display: flex;
+            border-bottom: 1px solid #e5e7eb;
+            margin-bottom: 1.5rem;
+            padding-left: 4px;
+            background-color: white;
+            border-radius: 0.5rem 0.5rem 0 0;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        .drop-zone {
+            border: 2px dashed #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .drop-zone:hover {
+            border-color: #2563eb;
+        }
+
+        .preview-image {
+            max-height: 16rem;
+            margin: 0 auto;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            border: 1px solid #e5e7eb;
+            background-color: white;
+            color: #374151;
+            font-size: 0.875rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            border: 1px solid #e5e7eb;
+            background-color: white;
+            color: #374151;
+            font-size: 0.875rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background-color: #2563eb;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #1d4ed8;
+        }
+
+        .btn-secondary {
+            background-color: #9ca3af;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background-color: #6b7280;
+        }
+
+        .result-container {
+            margin-top: 2rem;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold mb-8">AI Image Upscaler</h1>
+        
+        <!-- Tab Navigation -->
+        <div class="tabs-container">
+            <button onclick="switchTab('upscale')" class="tab-button active" data-tab="upscale">
+                Upscale
+            </button>
+            <button onclick="switchTab('resize')" class="tab-button" data-tab="resize">
+                Resize
+            </button>
+            <button onclick="switchTab('info')" class="tab-button" data-tab="info">
+                Image Info
+            </button>
+            <button onclick="switchTab('config')" class="tab-button" data-tab="config">
+                Configuration
+            </button>
+        </div>
+
+        <!-- Upscale Tab -->
+        <div id="upscale-tab" class="tab-content">
+            <form id="upscale-form" class="space-y-4">
+                <div class="drop-zone">
+                    <input type="file" id="upscale-image" accept="image/*" class="hidden" />
+                    <label for="upscale-image" class="cursor-pointer">
+                        <div id="upscale-preview" class="mb-4">
+                            <p class="text-gray-500">Drop image here or click to select</p>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="form-label">Model</label>
+                        <select id="model-select" class="form-select">
+                            <!-- Populated by JavaScript -->
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="form-label">Alpha Handling</label>
+                        <select id="alpha-handling" class="form-select">
+                            <option value="upscale">Upscale</option>
+                            <option value="resize">Resize</option>
+                            <option value="discard">Discard</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full btn btn-primary">
+                    Upscale Image
+                </button>
+            </form>
+
+            <div id="upscale-result" class="result-container hidden">
+                <h3 class="text-lg font-medium mb-4">Result</h3>
+                <img id="upscale-result-image" class="max-w-full rounded-lg" />
+                <a id="upscale-download" class="btn btn-primary mt-4 inline-block">
+                    Download Result
+                </a>
+            </div>
+        </div>
+
+        <!-- Resize Tab -->
+        <div id="resize-tab" class="tab-content hidden">
+            <form id="resize-form" class="space-y-4">
+                <div class="drop-zone">
+                    <input type="file" id="resize-image" accept="image/*" class="hidden" />
+                    <label for="resize-image" class="cursor-pointer">
+                        <div id="resize-preview" class="mb-4">
+                            <p class="text-gray-500">Drop image here or click to select</p>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="form-label">Scale Factor</label>
+                        <input type="number" id="scale-factor" step="0.1" min="0.1" max="10" value="2.0" 
+                               class="form-input" />
+                    </div>
+
+                    <div>
+                        <label class="form-label">Method</label>
+                        <select id="resize-method" class="form-select">
+                            <!-- Populated by JavaScript -->
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full btn btn-primary">
+                    Resize Image
+                </button>
+            </form>
+
+            <div id="resize-result" class="result-container hidden">
+                <h3 class="text-lg font-medium mb-4">Result</h3>
+                <img id="resize-result-image" class="max-w-full rounded-lg" />
+                <a id="resize-download" class="btn btn-primary mt-4 inline-block">
+                    Download Result
+                </a>
+            </div>
+        </div>
+
+        <!-- Info Tab -->
+        <div id="info-tab" class="tab-content hidden">
+            <form id="info-form" class="space-y-4">
+                <div class="drop-zone">
+                    <input type="file" id="info-image" accept="image/*" class="hidden" />
+                    <label for="info-image" class="cursor-pointer">
+                        <div id="info-preview" class="mb-4">
+                            <p class="text-gray-500">Drop image here or click to select</p>
+                        </div>
+                    </label>
+                </div>
+
+                <button type="submit" class="w-full btn btn-primary">
+                    Get Image Info
+                </button>
+            </form>
+
+            <div id="info-result" class="result-container hidden">
+                <h3 class="text-lg font-medium mb-4">Image Information</h3>
+                <pre id="info-text" class="bg-gray-800 text-white p-4 rounded-lg overflow-x-auto"></pre>
+            </div>
+        </div>
+
+        <!-- Config Tab -->
+        <div id="config-tab" class="tab-content hidden">
+            <form id="config-form" class="space-y-6">
+                <!-- Populated by JavaScript -->
+            </form>
+
+            <div class="mt-4 flex justify-end space-x-4">
+                <button type="button" onclick="resetConfig()" 
+                        class="btn btn-secondary">
+                    Reset
+                </button>
+                <button type="submit" form="config-form"
+                        class="btn btn-primary">
+                    Save Configuration
+                </button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // Utility Functions
+    function showLoading(element) {
+        element.classList.add('opacity-50', 'pointer-events-none');
+        element.innerHTML = '<span class="animate-spin">⏳</span> Processing...';
+    }
+
+    function hideLoading(element, originalText) {
+        element.classList.remove('opacity-50', 'pointer-events-none');
+        element.innerHTML = originalText;
+    }
+
+    function showError(message) {
+        alert(message); // Could be replaced with a more sophisticated error display
+    }
+
+    // Tab Switching
+    function switchTab(tabName) {
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.classList.add('hidden');
+        });
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.classList.remove('active');
+        });
+        
+        document.getElementById(`${tabName}-tab`).classList.remove('hidden');
+        document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+    }
+
+    // Image Preview Handling
+    function setupImagePreview(inputId, previewId) {
+        const input = document.getElementById(inputId);
+        const preview = document.getElementById(previewId);
+
+        input.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.innerHTML = `
+                        <img src="${e.target.result}" class="max-h-64 mx-auto" />
+                        <p class="mt-2 text-sm text-gray-500">${file.name}</p>
+                    `;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+
+    // Model List Population
+    async function loadModels() {
+        try {
+            const response = await fetch('/api/models');
+            const models = await response.json();
+            const select = document.getElementById('model-select');
+            select.innerHTML = models.map(model => 
+                `<option value="${model}">${model}</option>`
+            ).join('');
+        } catch (error) {
+            showError('Failed to load models');
+        }
+    }
+
+    async function loadResizeMethods() {
+    try {
+        const response = await fetch('/api/resize/methods');
+        const data = await response.json();
+        
+        // Update method dropdown
+        const select = document.getElementById('resize-method');
+        select.innerHTML = data.methods.map(method => 
+            `<option value="${method}">${method}</option>`
+        ).join('');
+        
+        // Update scale factor input limits
+        const scaleInput = document.getElementById('scale-factor');
+        scaleInput.min = data.scale_limits.min;
+        scaleInput.max = data.scale_limits.max;
+        scaleInput.step = '0.1';
+        scaleInput.title = `Value between ${data.scale_limits.min} and ${data.scale_limits.max}`;
+    } catch (error) {
+        showError('Failed to load resize methods');
+    }
+}
+
+    // Configuration Handling
+    async function loadConfig() {
+        try {
+            const response = await fetch('/api/config');
+            const config = await response.json();
+            
+            const form = document.getElementById('config-form');
+            form.innerHTML = '';
+
+            for (const [section, values] of Object.entries(config)) {
+                const sectionDiv = document.createElement('div');
+                sectionDiv.className = 'border rounded-lg p-4 mb-4';
+                sectionDiv.innerHTML = `
+                    <h3 class="text-lg font-medium mb-4">${section}</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        ${Object.entries(values).map(([key, value]) => `
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">${key}</label>
+                                <input type="text" 
+                                       name="${section}.${key}" 
+                                       value="${value}"
+                                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" />
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                form.appendChild(sectionDiv);
+            }
+        } catch (error) {
+            showError('Failed to load configuration');
+        }
+    }
+
+    async function saveConfig(event) {
+        event.preventDefault();
+        const form = document.getElementById('config-form');
+        const config = {};
+
+        // Gather all inputs
+        form.querySelectorAll('input').forEach(input => {
+            const [section, key] = input.name.split('.');
+            if (!config[section]) config[section] = {};
+            config[section][key] = input.value;
+        });
+
+        try {
+            const response = await fetch('/api/config', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(config)
+            });
+
+            if (response.ok) {
+                alert('Configuration saved successfully');
+                window.location.reload();
+            } else {
+                throw new Error('Failed to save configuration');
+            }
+        } catch (error) {
+            showError('Failed to save configuration');
+        }
+    }
+
+    function resetConfig() {
+        loadConfig();
+    }
+
+    // Upscale Handling
+    async function handleUpscale(event) {
+        event.preventDefault();
+        const button = event.submitter;
+        const originalText = button.innerHTML;
+        showLoading(button);
+
+        const formData = new FormData();
+        const imageFile = document.getElementById('upscale-image').files[0];
+        const model = document.getElementById('model-select').value;
+        const alphaHandling = document.getElementById('alpha-handling').value;
+
+        formData.append('image', imageFile);
+        formData.append('model', model);
+        formData.append('alpha_handling', alphaHandling);
+
+        try {
+            const response = await fetch('/api/upscale', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                document.getElementById('upscale-result-image').src = url;
+                document.getElementById('upscale-download').href = url;
+                document.getElementById('upscale-result').classList.remove('hidden');
+            } else {
+                throw new Error('Upscale failed');
+            }
+        } catch (error) {
+            showError('Failed to upscale image');
+        } finally {
+            hideLoading(button, originalText);
+        }
+    }
+
+    // Resize Handling
+    async function handleResize(event) {
+        event.preventDefault();
+        const button = event.submitter;
+        const originalText = button.innerHTML;
+        showLoading(button);
+
+        const formData = new FormData();
+        const imageFile = document.getElementById('resize-image').files[0];
+        const scaleFactor = document.getElementById('scale-factor').value;
+        const method = document.getElementById('resize-method').value;
+
+        formData.append('image', imageFile);
+        formData.append('scale_factor', scaleFactor);
+        formData.append('method', method);
+
+        try {
+            const response = await fetch('/api/resize', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                document.getElementById('resize-result-image').src = url;
+                document.getElementById('resize-download').href = url;
+                document.getElementById('resize-result').classList.remove('hidden');
+            } else {
+                throw new Error('Resize failed');
+            }
+        } catch (error) {
+            showError('Failed to resize image');
+        } finally {
+            hideLoading(button, originalText);
+        }
+    }
+
+    // Image Info Handling
+    async function handleInfo(event) {
+        event.preventDefault();
+        const button = event.submitter;
+        const originalText = button.innerHTML;
+        showLoading(button);
+
+        const formData = new FormData();
+        const imageFile = document.getElementById('info-image').files[0];
+        formData.append('image', imageFile);
+
+        try {
+            const response = await fetch('/api/info', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
+                const info = await response.json();
+                document.getElementById('info-text').textContent = JSON.stringify(info, null, 2);
+                document.getElementById('info-result').classList.remove('hidden');
+            } else {
+                throw new Error('Failed to get image info');
+            }
+        } catch (error) {
+            showError('Failed to get image information');
+        } finally {
+            hideLoading(button, originalText);
+        }
+    }
+
+    // Event Listeners
+    document.addEventListener('DOMContentLoaded', () => {
+        loadModels();
+        loadConfig();
+        loadResizeMethods();
+        
+        setupImagePreview('upscale-image', 'upscale-preview');
+        setupImagePreview('resize-image', 'resize-preview');
+        setupImagePreview('info-image', 'info-preview');
+        
+        document.getElementById('upscale-form').addEventListener('submit', handleUpscale);
+        document.getElementById('resize-form').addEventListener('submit', handleResize);
+        document.getElementById('info-form').addEventListener('submit', handleInfo);
+        document.getElementById('config-form').addEventListener('submit', saveConfig);
+    });
+</script>
+
+<style>
+    .tab-button {
+        @apply px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300;
+    }
+    
+    .tab-button.active {
+        @apply border-b-2 border-blue-500 text-blue-600;
+    }
+    
+    .tab-content {
+        @apply py-4;
+    }
+</style>
+</body>
+</html>
