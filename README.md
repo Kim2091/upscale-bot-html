@@ -15,6 +15,7 @@ A local web interface for upscaling images using AI models.
 - Python 3.9 or higher
 - CUDA-capable GPU
 - nvidia-smi
+- [imagemagick](https://imagemagick.org/script/download.php)
 
 ## Installation
 
