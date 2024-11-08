@@ -2,6 +2,8 @@
 
 A local web interface for upscaling images using AI models.
 
+![image](https://github.com/user-attachments/assets/373b2866-a4d8-4972-8caa-2337f19a2424)
+
 ## Features
 
 - Supports AI upscaling models through [spandrel](https://github.com/chaiNNer-org/spandrel/)
@@ -21,7 +23,7 @@ A local web interface for upscaling images using AI models.
 
 1. Clone this repository
 2. Install PyTorch CUDA from https://pytorch.org/get-started/locally/
-3. Install other requirements:
+3. Install [imagemagick](https://imagemagick.org/script/download.php) and other requirements:
    ```
    pip install -r requirements.txt
    ```
