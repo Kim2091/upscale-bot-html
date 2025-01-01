@@ -1,10 +1,9 @@
 # utils/image_info.py
 
 import os
+import struct
 from PIL import Image
 from PIL.ExifTags import TAGS
-import wand.image
-import struct
 
 def get_image_info(file_path):
     """
@@ -53,35 +52,28 @@ def get_image_info(file_path):
                     info["exif"][tag] = value
 
     except Exception as e:
-        # If PIL fails, try with Wand (ImageMagick)
-        try:
-            with wand.image.Image(filename=file_path) as img:
-                info["format"] = img.format
-                info["width"], info["height"] = img.size
-                info["color_depth"] = img.depth
-                info["compression"] = img.compression
-
-        except Exception as wand_error:
-            # If both PIL and Wand fail, check if it's a DDS file
-            if file_path.lower().endswith('.dds'):
-                with open(file_path, 'rb') as f:
-                    try:
-                        # Read DDS header
-                        magic = f.read(4)
-                        if magic == b'DDS ':
-                            header_size = struct.unpack('<I', f.read(4))[0]
-                            if header_size == 124:
-                                flags = struct.unpack('<I', f.read(4))[0]
-                                height = struct.unpack('<I', f.read(4))[0]
-                                width = struct.unpack('<I', f.read(4))[0]
-                                
-                                info["format"] = "DDS"
-                                info["width"] = width
-                                info["height"] = height
-                    except Exception as dds_error:
-                        print(f"Error reading DDS file: {dds_error}")
-            else:
-                print(f"Error processing image with both PIL and Wand: {e}, {wand_error}")
+        # If PIL fails, check if it's a DDS file
+        if file_path.lower().endswith('.dds'):
+            with open(file_path, 'rb') as f:
+                try:
+                    # Read DDS header
+                    magic = f.read(4)
+                    if magic == b'DDS ':
+                        header_size = struct.unpack('<I', f.read(4))[0]
+                        if header_size == 124:
+                            flags = struct.unpack('<I', f.read(4))[0]
+                            height = struct.unpack('<I', f.read(4))[0]
+                            width = struct.unpack('<I', f.read(4))[0]
+                            
+                            info["format"] = "DDS"
+                            info["width"] = width
+                            info["height"] = height
+                            info["mode"] = "RGB"  # Assuming RGB for DDS
+                            info["color_depth"] = 24
+                except Exception as dds_error:
+                    print(f"Error reading DDS file: {dds_error}")
+        else:
+            print(f"Error processing image: {e}")
 
     return info
 

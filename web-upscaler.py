@@ -2,34 +2,26 @@
 import os
 import io
 import gc
-import re
 import time
 import asyncio
 import traceback
-from io import BytesIO
 from concurrent.futures import ThreadPoolExecutor
 import threading
-import concurrent.futures
-from functools import partial
-import json
 import configparser
 import logging
 
 # Third-party library imports
 import torch
 import numpy as np
-from PIL import Image, UnidentifiedImageError
+from PIL import Image
 import spandrel
 import spandrel_extra_arches
 from flask import Flask, request, jsonify, render_template, send_file, Response
-from werkzeug.utils import secure_filename
 
 # Local module imports
-from utils.vram_estimator import estimate_vram_and_tile_size, get_free_vram
-from utils.fuzzy_model_matcher import find_closest_models, search_models
+from utils.vram_estimator import estimate_vram_and_tile_size
 from utils.alpha_handler import handle_alpha
 from utils.resize_module import resize_image, get_available_filters, MIN_SCALE_FACTOR, MAX_SCALE_FACTOR
-from utils.image_info import get_image_info
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)

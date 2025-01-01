@@ -4,7 +4,6 @@ import chainner_ext
 import numpy as np
 from PIL import Image
 from io import BytesIO
-import configparser
 from .config_reader import read_config
 
 # Read configuration

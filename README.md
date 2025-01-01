@@ -17,13 +17,12 @@ A local web interface for upscaling images using AI models.
 - Python 3.9 or higher
 - CUDA-capable GPU
 - nvidia-smi
-- [imagemagick](https://imagemagick.org/script/download.php)
 
 ## Installation
 
 1. Clone this repository
 2. Install PyTorch CUDA from https://pytorch.org/get-started/locally/
-3. Install [imagemagick](https://imagemagick.org/script/download.php) and other requirements:
+3. Install dependencies
    ```
    pip install -r requirements.txt
    ```
